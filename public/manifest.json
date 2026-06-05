@@ -1,0 +1,22 @@
+{
+  "name": "Corsica & Nice Voyage Journal",
+  "short_name": "Corsica Trip",
+  "description": "Shared travel journal for the Corsica & Côte d'Azur yacht charter",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
