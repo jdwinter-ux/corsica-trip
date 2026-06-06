@@ -16,13 +16,17 @@ Running log of work on the Corsica & Nice Voyage Journal. Newest session first.
 - `npm run build` clean (SW emitted); `npm test` 8/8 (carried-over chatMerge tests).
 - All app code is in place; identical feature set to the Aeolian app (realtime, offline notes+photos, editable IDs, reference headshots, etc.).
 
-### Incomplete / buggy / caveats — NEEDS THE OWNER
-- **Placeholders to confirm:** trip dates (Sep 5–12, 2026), boat name, and the itinerary itself are a researched draft — replace with the real plan.
-- **Not done (require your accounts):** create a new Supabase project + run `supabase/setup.sql`; create a new Vercel project; set env vars; create a GitHub repo + push. See `SETUP.md`.
-- `.env` holds placeholders only.
+### Deployment — DONE ✅
+- GitHub: https://github.com/jdwinter-ux/corsica-trip
+- Supabase project created + `setup.sql` run; Vercel deploy live at https://corsica-trip.vercel.app
+- Verified live: client env baked into the bundle; `/api/chat` + `/api/identify` return 401 (load cleanly); branding correct.
+- Gotcha hit & fixed: a Vercel "Use existing Build Cache" redeploy served an env-less bundle (500s) — a fresh commit forced a clean build that baked in the env vars.
+
+### Incomplete / caveats
+- **Placeholders to confirm:** trip dates (Sep 5–12, 2026), boat name, and the itinerary are a researched draft — replace with the real plan.
+- Final human check: logged-in Chat (Léa) reply + a photo upload; ensure the Vercel domain is in Supabase Auth redirect URLs for magic-link login.
 - Michelin/restaurant names are real as of 2025 research but verify before relying on them.
 
 ### Tackle next time
-- Complete `SETUP.md` (Supabase, Vercel, env, GitHub).
 - Replace placeholder dates/boat/itinerary with the confirmed trip.
 - Optional: PDF export, PWA icon PNGs.
