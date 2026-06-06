@@ -6,92 +6,65 @@
 
 // Stops & coordinates for the map
 export const MAP_LOCATIONS = {
-  nice:         { lat: 43.6950, lng: 7.2720, name: 'Nice', type: 'port' },
-  calvi:        { lat: 42.5667, lng: 8.7575, name: 'Calvi', type: 'port' },
-  scandola:     { lat: 42.3597, lng: 8.5547, name: 'Scandola Reserve', type: 'reserve' },
-  girolata:     { lat: 42.3539, lng: 8.6186, name: 'Girolata', type: 'anchorage' },
-  piana:        { lat: 42.2456, lng: 8.6294, name: 'Calanques de Piana', type: 'landmark' },
-  cargese:      { lat: 42.1378, lng: 8.5961, name: 'Cargèse', type: 'port' },
-  ajaccio:      { lat: 41.9192, lng: 8.7386, name: 'Ajaccio', type: 'port' },
-  sanguinaires: { lat: 41.8800, lng: 8.5870, name: 'Îles Sanguinaires', type: 'island' },
-  bonifacio:    { lat: 41.3874, lng: 9.1593, name: 'Bonifacio', type: 'port' },
-  lavezzi:      { lat: 41.3328, lng: 9.2543, name: 'Îles Lavezzi', type: 'island' },
-  portovecchio: { lat: 41.5912, lng: 9.2795, name: 'Porto-Vecchio', type: 'port' },
-  lerins:       { lat: 43.5145, lng: 7.0480, name: 'Îles de Lérins', type: 'island' },
+  bastia:     { lat: 42.7028, lng: 9.4503, name: 'Bastia', type: 'port' },
+  macinaggio: { lat: 42.9620, lng: 9.4530, name: 'Macinaggio', type: 'port' },
+  tomino:     { lat: 42.9540, lng: 9.4430, name: 'Tomino', type: 'village' },
+  rogliano:   { lat: 42.9510, lng: 9.4180, name: 'Rogliano', type: 'village' },
+  centuri:    { lat: 42.9690, lng: 9.3530, name: 'Centuri', type: 'village' },
+  nonza:      { lat: 42.7790, lng: 9.3380, name: 'Nonza', type: 'village' },
+  patrimonio: { lat: 42.7010, lng: 9.3500, name: 'Patrimonio', type: 'village' },
+  bonifacio:  { lat: 41.3874, lng: 9.1593, name: 'Bonifacio', type: 'port' },
+  lavezzi:    { lat: 41.3328, lng: 9.2543, name: 'Îles Lavezzi', type: 'island' },
+  figari:     { lat: 41.5006, lng: 9.0978, name: 'Figari', type: 'airport' },
+  nice:       { lat: 43.6950, lng: 7.2720, name: 'Nice', type: 'port' },
 };
 
 // Route stops for each day (keys into MAP_LOCATIONS)
 export const DAILY_ROUTES = {
-  1: ['nice'],
-  2: ['calvi'],
-  3: ['calvi', 'scandola', 'girolata', 'piana'],
-  4: ['girolata', 'cargese', 'ajaccio', 'sanguinaires'],
-  5: ['ajaccio', 'bonifacio'],
-  6: ['bonifacio', 'lavezzi', 'portovecchio'],
-  7: ['portovecchio', 'lerins'],
-  8: ['lerins', 'nice'],
+  1: ['bastia', 'macinaggio', 'tomino'],
+  2: ['macinaggio', 'rogliano', 'centuri', 'nonza', 'patrimonio'],
+  3: ['macinaggio', 'bonifacio'],
+  4: ['bonifacio', 'lavezzi'],
+  5: ['bonifacio', 'figari', 'nice'],
 };
 
-// Full ordered route for the overview polyline
+// Full ordered route for the overview polyline (major movements)
 export const FULL_ROUTE = [
-  MAP_LOCATIONS.nice,
-  MAP_LOCATIONS.calvi,
-  MAP_LOCATIONS.scandola,
-  MAP_LOCATIONS.girolata,
-  MAP_LOCATIONS.piana,
-  MAP_LOCATIONS.cargese,
-  MAP_LOCATIONS.ajaccio,
-  MAP_LOCATIONS.sanguinaires,
+  MAP_LOCATIONS.bastia,
+  MAP_LOCATIONS.macinaggio,
   MAP_LOCATIONS.bonifacio,
   MAP_LOCATIONS.lavezzi,
-  MAP_LOCATIONS.portovecchio,
-  MAP_LOCATIONS.lerins,
   MAP_LOCATIONS.nice,
 ];
 
-// Default map center [lat, lng] — between the Riviera and Corsica
-export const MAP_CENTER = [42.6, 8.3];
+// Default map center [lat, lng] — frames Corsica + the Côte d'Azur
+export const MAP_CENTER = [42.5, 8.4];
 
 // Per-day location knowledge to prime AI photo identification
 export const DAY_LOCATIONS = {
   1: {
-    islands: ['Nice', "Côte d'Azur"],
-    landmarks: ['Baie des Anges', 'Promenade des Anglais', 'Port of Nice'],
-    activities: ['boarding the yacht', 'welcome dinner', 'socca and rosé'],
+    islands: ['Cap Corse', 'Macinaggio', 'Tomino', 'Rogliano'],
+    landmarks: ['Hôtel Le Tomino', 'Macinaggio marina', 'Genoese watchtowers', 'Rogliano castle ruins', "Sant'Agnellu church"],
+    activities: ['arrival', 'driving the cape', 'terrace dinner'],
   },
   2: {
-    islands: ['Calvi', 'Corsica'],
-    landmarks: ['Calvi citadel', 'Genoese ramparts', 'Notre-Dame de la Serra', 'Calvi beach', 'La Signoria'],
-    activities: ['citadel walk', 'swimming', 'charcuterie tasting'],
+    islands: ['Cap Corse', 'Macinaggio', 'Centuri', 'Nonza', 'Patrimonio'],
+    landmarks: ['Sentier des Douaniers', 'Tamarone beach', 'Santa Maria tower', 'Finocchiarola islets', 'Nonza black-pebble beach', 'Patrimonio vineyards'],
+    activities: ['coastal hiking', 'beach', 'wine tasting', 'e-biking'],
   },
   3: {
-    islands: ['Scandola Reserve', 'Girolata', 'Calanques de Piana'],
-    landmarks: ['red porphyry cliffs', 'sea caves', 'Girolata fort', 'ochre rock spires'],
-    activities: ['tender tour', 'snorkeling', 'hiking the Sentier du facteur'],
+    islands: ['Bonifacio'],
+    landmarks: ['Haute Ville citadel', 'Bonifacio limestone cliffs', 'marine cemetery', 'Hotel Cala di Greco', 'the marina'],
+    activities: ['driving south', 'citadel walk', 'sunset on the ramparts'],
   },
   4: {
-    islands: ['Ajaccio', 'Cargèse'],
-    landmarks: ['Maison Bonaparte', 'Ajaccio old town', 'Îles Sanguinaires', 'Pointe de la Parata'],
-    activities: ['old town walk', 'market', 'sunset at the Sanguinaires'],
+    islands: ['Bonifacio', 'Îles Lavezzi'],
+    landmarks: ["King of Aragon's Staircase", "Bastion de l'Étendard", 'Grain de Sable', 'Sdragonato sea cave', 'Lavezzi granite coves', 'Pertusato lighthouse'],
+    activities: ['cliffs-and-caves boat tour', 'snorkeling', 'swimming'],
   },
   5: {
-    islands: ['Bonifacio'],
-    landmarks: ['chalk cliffs', 'Haute Ville citadel', "Escalier du Roi d'Aragon", 'Pertusato lighthouse', 'Bouches de Bonifacio'],
-    activities: ['citadel walk', 'swimming', 'Michelin dinner'],
-  },
-  6: {
-    islands: ['Îles Lavezzi', 'Porto-Vecchio'],
-    landmarks: ['Lavezzi granite coves', 'Palombaggia beach', 'Santa Giulia', 'Casadelmar'],
-    activities: ['snorkeling', 'beach', 'paddleboarding'],
-  },
-  7: {
-    islands: ['Îles de Lérins', 'Sainte-Marguerite', 'Saint-Honorat'],
-    landmarks: ['Lérins monastery', 'Fort Royal', 'monastery vineyard'],
-    activities: ['island walk', 'passage day', 'farewell dinner'],
-  },
-  8: {
-    islands: ['Nice'],
-    landmarks: ['Port of Nice', 'Promenade des Anglais'],
-    activities: ['disembarkation', 'departure'],
+    islands: ['Nice', "Côte d'Azur"],
+    landmarks: ['Promenade des Anglais', 'Vieux Nice', 'Place Rossetti', 'Cours Saleya', 'Castle Hill', 'Hotel Negresco'],
+    activities: ['old town walk', 'socca', 'flower market'],
   },
 };

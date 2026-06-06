@@ -183,7 +183,7 @@ Known locations for this day:
     content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } });
     content.push({
       type: 'text',
-      text: `You are a Corsica & Côte d'Azur travel expert helping identify photos from a yacht charter trip.
+      text: `You are a Corsica & Côte d'Azur travel expert helping identify photos from a Corsica & Côte d'Azur trip (Cap Corse, Bonifacio, Nice).
 
 This photo (the one labeled "Photo to identify") was taken on ${day_context}.${gpsInfo}${locationContext}${travelerContext}${confirmedContext}
 

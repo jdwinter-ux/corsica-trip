@@ -38,7 +38,7 @@ export default function PlanTab({ day }) {
       {(day.activities.hiker || day.activities.biker) && (
         <>
           <div style={{ fontSize: '0.75rem', color: THEME.blue, marginBottom: '0.8rem', letterSpacing: '0.08em' }}>
-            🥾 MORNING SPLIT
+            🥾 GET OUTSIDE
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginBottom: '1.5rem' }}>
             {day.activities.hiker && (
@@ -48,7 +48,7 @@ export default function PlanTab({ day }) {
                 borderRadius: '10px', padding: '0.8rem 1rem',
               }}>
                 <div style={{ fontSize: '0.7rem', color: THEME.green, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.3rem' }}>
-                  🥾 HIKERS
+                  🥾 ON FOOT
                 </div>
                 <div style={{ color: THEME.sand, fontSize: '0.85rem', lineHeight: 1.5 }}>{day.activities.hiker}</div>
               </div>
@@ -60,7 +60,7 @@ export default function PlanTab({ day }) {
                 borderRadius: '10px', padding: '0.8rem 1rem',
               }}>
                 <div style={{ fontSize: '0.7rem', color: THEME.blueAccent, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.3rem' }}>
-                  🚴 BIKERS
+                  🚴 BY E-BIKE
                 </div>
                 <div style={{ color: THEME.sand, fontSize: '0.85rem', lineHeight: 1.5 }}>{day.activities.biker}</div>
               </div>
@@ -76,7 +76,7 @@ export default function PlanTab({ day }) {
           borderRadius: '10px', padding: '0.8rem 1rem', marginBottom: '1.5rem',
         }}>
           <div style={{ fontSize: '0.7rem', color: THEME.gold, fontWeight: 700, letterSpacing: '0.1em', marginBottom: '0.3rem' }}>
-            📍 RENDEZVOUS
+            📍 DON'T MISS
           </div>
           <div style={{ color: THEME.sand, fontSize: '0.85rem', lineHeight: 1.5 }}>{day.activities.rendezvous}</div>
         </div>

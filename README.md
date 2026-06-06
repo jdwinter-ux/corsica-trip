@@ -1,6 +1,6 @@
 # Corsica & Nice Voyage Journal
 
-A shared travel journal for a Nice ⇄ Corsica yacht charter.
+A shared travel journal for a Corsica & Côte d'Azur trip — Cap Corse · Bonifacio · Nice (June 19–23, 2026).
 
 > **New clone — read `SETUP.md` first.** Dates, the boat name, the passcode, and
 > all API keys are placeholders until you complete the setup steps.
@@ -71,4 +71,4 @@ for this clone's remaining steps. Trip content lives in `src/data/`
 
 ---
 
-Cloned from the Aeolian Islands Voyage Journal for a Corsica & Côte d'Azur charter.
+Cloned from the Aeolian Islands Voyage Journal for a Corsica & Côte d'Azur trip.

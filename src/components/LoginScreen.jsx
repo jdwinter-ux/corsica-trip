@@ -132,7 +132,7 @@ export default function LoginScreen() {
             Corsica &amp; Nice
           </h1>
           <div style={{ fontSize: '0.85rem', color: THEME.blue, marginTop: '0.3rem' }}>
-            Sep 5–12, 2026
+            June 19–23, 2026
           </div>
         </div>
 

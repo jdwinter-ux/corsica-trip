@@ -55,6 +55,6 @@ export const THEME = {
 export const BRAND = {
   appName: 'Corsica & Nice Voyage Journal',
   shortName: 'Corsica Trip',
-  description: "Shared travel journal for the Corsica & Côte d'Azur charter",
+  description: "Shared travel journal for a Corsica & Côte d'Azur trip",
   themeColor: '#0a1628',
 };
