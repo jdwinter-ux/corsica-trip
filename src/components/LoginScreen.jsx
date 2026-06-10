@@ -32,7 +32,7 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
 
-  // Step 1: validate the email, then email a 6-digit code.
+  // Step 1: validate the email, then email a login code.
   const handleSendCode = async (e) => {
     e.preventDefault();
     setError('');
@@ -66,7 +66,7 @@ export default function LoginScreen() {
     }
   };
 
-  // Step 2: verify the 6-digit code. On success, App's auth listener takes over.
+  // Step 2: verify the login code. On success, App's auth listener takes over.
   const handleVerify = async (e) => {
     e.preventDefault();
     setError('');
@@ -91,10 +91,10 @@ export default function LoginScreen() {
 
     if (verifyError) {
       const msg = verifyError.message.toLowerCase();
-      if (msg.includes('expired')) {
-        setError('That code has expired. Tap "Resend code" to get a new one.');
-      } else if (msg.includes('invalid') || msg.includes('token')) {
-        setError('That code is not correct. Double-check and try again.');
+      // Supabase returns the same "expired or invalid" message for a mistyped
+      // code and an expired one, so don't claim to know which it was.
+      if (msg.includes('expired') || msg.includes('invalid') || msg.includes('token')) {
+        setError('That code didn’t work — it may be mistyped or expired. Re-enter it, or tap “Resend code.”');
       } else {
         setError(verifyError.message);
       }
@@ -227,8 +227,9 @@ export default function LoginScreen() {
           </div>
 
           <div style={{ marginBottom: '1.2rem' }}>
-            <label style={labelStyle}>ENTER CODE</label>
+            <label htmlFor="login-code" style={labelStyle}>ENTER CODE</label>
             <input
+              id="login-code"
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
@@ -289,8 +290,9 @@ export default function LoginScreen() {
     <>
       <form onSubmit={handleSendCode}>
         <div style={{ marginBottom: '1.5rem' }}>
-          <label style={labelStyle}>YOUR EMAIL</label>
+          <label htmlFor="login-email" style={labelStyle}>YOUR EMAIL</label>
           <input
+            id="login-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

@@ -24,20 +24,25 @@ if (delErr) {
 console.log(`Deleted ${count ?? 0} chat message(s).`);
 
 // 2) Empty the chat-attachments bucket (files are stored flat at the root).
-const { data: files, error: listErr } = await sb.storage
-  .from('chat-attachments')
-  .list('', { limit: 1000 });
-if (listErr) {
-  console.error('Failed to list chat-attachments:', listErr.message);
-  process.exit(1);
-}
-const paths = (files ?? []).filter((f) => f.id).map((f) => f.name);
-if (paths.length) {
+// Page through until nothing is left — list() caps at 100/call by default, so a
+// single pass would silently leave older files behind.
+let removedFiles = 0;
+while (true) {
+  const { data: files, error: listErr } = await sb.storage
+    .from('chat-attachments')
+    .list('', { limit: 100 });
+  if (listErr) {
+    console.error('Failed to list chat-attachments:', listErr.message);
+    process.exit(1);
+  }
+  const paths = (files ?? []).filter((f) => f.id).map((f) => f.name);
+  if (!paths.length) break;
   const { error: rmErr } = await sb.storage.from('chat-attachments').remove(paths);
   if (rmErr) {
     console.error('Failed to remove attachment files:', rmErr.message);
     process.exit(1);
   }
+  removedFiles += paths.length;
 }
-console.log(`Removed ${paths.length} attachment file(s).`);
+console.log(`Removed ${removedFiles} attachment file(s).`);
 console.log('Chat reset complete.');

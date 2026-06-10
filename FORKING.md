@@ -49,6 +49,13 @@ This is the bulk of the work — it's writing, not coding.
    **Confirm signup** (new users) *and* **Magic Link** (returning users); add
    `<p>Your code: <b>{{ .Token }}</b></p>` to each → Save. Skip this and first-time
    logins get a code-less email.
+5. **(Strongly recommended) Custom SMTP.** Supabase's built-in email sender is
+   capped at ~2/hour — too low for a group logging in together. Under Project
+   Settings → **Authentication → SMTP Settings**, enable Custom SMTP with your own
+   provider. For **SendGrid**: verify a sender + make a Mail-Send API key, then set
+   Host `smtp.sendgrid.net`, Port `587`, Username the literal `apikey`, Password the
+   `SG.…` key, Sender = your verified address. Finally bump Authentication →
+   **Rate Limits** → emails/hour (only applies once custom SMTP is on).
 
 ## 6. Create a new Vercel project
 Import the repo, then set env vars (Project → Settings → Environment Variables):

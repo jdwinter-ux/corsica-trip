@@ -32,7 +32,12 @@ These are researched guesses — swap in the real plan:
    - Authentication → Emails → **Confirm signup** *and* **Magic Link**
    - Add to each body: `<p>Your code: <b>{{ .Token }}</b></p>` (keep or drop the link as you like) → Save.
    - Skip this and first-time users get a code-less email and can't finish logging in.
-5. Copy the **Project URL**, **anon key**, and **service_role key** from Settings → API.
+5. **(Strongly recommended) Custom SMTP — or login emails get rate-limited.** Supabase's built-in email sender is capped at ~2 emails/hour (a shared testing service), which throttles a group all logging in around the same time. Wire in your own provider under Project Settings → **Authentication → SMTP Settings** → enable Custom SMTP. Using **SendGrid** (free tier ~100/day):
+   - In SendGrid: verify a sender (Settings → Sender Authentication → Single Sender, or authenticate a domain for better deliverability) **and** create an API key with **Mail Send** permission (`SG.…`).
+   - In Supabase SMTP settings: Host `smtp.sendgrid.net`, Port `587`, Username the literal string **`apikey`** (not the key itself), Password the `SG.…` key, Sender email = your verified address, Sender name = the trip name.
+   - Then raise Authentication → **Rate Limits** → emails/hour (e.g. 30–100). This control only takes effect once custom SMTP is enabled.
+   - Common gotcha: the API key goes in **Password**; Username is always the literal `apikey`.
+6. Copy the **Project URL**, **anon key**, and **service_role key** from Settings → API.
 
 ### 3. Fill in `.env` (local) and Vercel env vars
 Put the four Supabase/Anthropic values into `.env` (local) and into the Vercel
@@ -43,7 +48,7 @@ is not needed — login is open email OTP.)
 ### 4. Create the GitHub repo + Vercel project
 - New GitHub repo (e.g. `corsica-trip`), then from this folder:
   `git remote add origin <url>` → `git push -u origin main`.
-- Import it into Vercel; set the 5 env vars; deploy. Pushes to `main` auto-deploy.
+- Import it into Vercel; set the 4 env vars; deploy. Pushes to `main` auto-deploy.
 
 ### 5. Verify (same as the Aeolian app)
 - `npm run build` + `npm test` locally.
