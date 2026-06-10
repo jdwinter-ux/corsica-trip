@@ -72,9 +72,10 @@ export default function LoginScreen() {
     setError('');
     setInfo('');
 
-    const token = code.replace(/\s/g, '');
-    if (!/^\d{6}$/.test(token)) {
-      setError('Enter the 6-digit code from your email');
+    // Supabase email OTP length is configurable (6–10 digits); don't assume 6.
+    const token = code.replace(/\D/g, '');
+    if (!/^\d{6,10}$/.test(token)) {
+      setError('Enter the code from your email');
       return;
     }
 
@@ -220,7 +221,7 @@ export default function LoginScreen() {
         <form onSubmit={handleVerify}>
           <div style={{ marginBottom: '1.2rem', textAlign: 'center' }}>
             <p style={{ color: THEME.blue, fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
-              We emailed a 6-digit code to<br />
+              We emailed a login code to<br />
               <span style={{ color: THEME.gold }}>{email}</span>
             </p>
           </div>
@@ -232,10 +233,9 @@ export default function LoginScreen() {
               inputMode="numeric"
               autoComplete="one-time-code"
               autoFocus
-              maxLength={6}
+              maxLength={10}
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              placeholder="123456"
               style={{
                 ...inputStyle,
                 textAlign: 'center',
@@ -311,7 +311,7 @@ export default function LoginScreen() {
       </form>
 
       <p style={{ textAlign: 'center', color: THEME.blueMuted, fontSize: '0.75rem', marginTop: '1.5rem', lineHeight: 1.5 }}>
-        Enter your email and we'll send you<br />a 6-digit code to log in.
+        Enter your email and we'll send you<br />a login code to log in.
       </p>
     </>
   );

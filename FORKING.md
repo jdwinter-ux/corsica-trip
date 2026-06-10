@@ -41,8 +41,14 @@ This is the bulk of the work — it's writing, not coding.
 1. New project at supabase.com.
 2. SQL Editor → paste and run **`supabase/setup.sql`** (creates tables, RLS,
    storage buckets, enables realtime; optional traveler seed at the bottom).
-3. Auth → enable Email (magic link), and set the Site URL / redirect URLs to
+3. Auth → enable the **Email** provider, and set the Site URL / redirect URLs to
    your Vercel domain.
+4. **Email templates → add `{{ .Token }}`.** Login uses an in-app code
+   (`signInWithOtp`/`verifyOtp`), not a clicked link — the code only appears if
+   the template contains the token. Edit **both** Authentication → Emails →
+   **Confirm signup** (new users) *and* **Magic Link** (returning users); add
+   `<p>Your code: <b>{{ .Token }}</b></p>` to each → Save. Skip this and first-time
+   logins get a code-less email.
 
 ## 6. Create a new Vercel project
 Import the repo, then set env vars (Project → Settings → Environment Variables):
@@ -51,7 +57,6 @@ Import the repo, then set env vars (Project → Settings → Environment Variabl
 |----------|-----------------|
 | `VITE_SUPABASE_URL` | client |
 | `VITE_SUPABASE_ANON_KEY` | client |
-| `VITE_TRIP_PASSCODE` | client (shared login passcode) |
 | `ANTHROPIC_API_KEY` | server (`api/`) — no `VITE_` prefix |
 | `SUPABASE_SERVICE_ROLE_KEY` | server (`api/`) — no `VITE_` prefix |
 
@@ -59,7 +64,7 @@ Push to `main` to deploy (auto-deploys on push).
 
 ## 7. Verify
 - `npm run build` and `npm test` pass locally.
-- On the deployed site: log in with the passcode, then check the two AI features
+- On the deployed site: log in (email → emailed code), then check the two AI features
   end-to-end — **Chat** (the guide replies) and **Photos** (upload identifies).
   These exercise the `api/` functions + Anthropic + Supabase together.
 - Open in two browsers to confirm realtime (a note/photo/chat in one appears in

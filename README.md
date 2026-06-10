@@ -38,14 +38,12 @@ Deployed on Vercel; any push to `main` triggers a new deployment.
 |----------|-------------|
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `VITE_TRIP_PASSCODE` | Shared passcode for trip members |
 | `ANTHROPIC_API_KEY` | Anthropic API key (server-side only) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
 
 ## Operating Notes
 
-- **Adding a guest:** share the trip passcode; they enter email + passcode and get a magic link.
-- **Rotating the passcode:** update `VITE_TRIP_PASSCODE` in Vercel and redeploy.
+- **Adding a guest:** just share the URL — they enter their email and get a login code by email (login is open; no passcode). Requires the Supabase *Confirm signup* + *Magic Link* templates to include `{{ .Token }}` (see `SETUP.md`).
 - **Usage/costs:** Supabase / Anthropic console / Vercel dashboards.
 
 ## Offline support

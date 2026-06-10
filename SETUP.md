@@ -27,13 +27,18 @@ These are researched guesses — swap in the real plan:
 ### 2. Create a new Supabase project
 1. supabase.com → new project (pick a region near you/France, e.g. `eu-west`).
 2. SQL Editor → paste and run **`supabase/setup.sql`** (creates tables, RLS, storage buckets, realtime, optional seed).
-3. Auth → enable **Email (magic link)**; set Site URL + redirect URLs to your eventual Vercel domain (and `http://localhost:5173` for local dev).
-4. Copy the **Project URL**, **anon key**, and **service_role key** from Settings → API.
+3. Auth → enable the **Email** provider; set Site URL + redirect URLs to your eventual Vercel domain (and `http://localhost:5173` for local dev).
+4. **Email templates → add the login code.** Login uses an in-app OTP code (`signInWithOtp`/`verifyOtp`), not a clicked link. Supabase only includes the code if the template contains `{{ .Token }}`. (Code length is set by Authentication → Email OTP length, default 6; the app accepts 6–10 digits.) Edit **both** templates (a new email hits *Confirm signup*; a returning one hits *Magic Link*):
+   - Authentication → Emails → **Confirm signup** *and* **Magic Link**
+   - Add to each body: `<p>Your code: <b>{{ .Token }}</b></p>` (keep or drop the link as you like) → Save.
+   - Skip this and first-time users get a code-less email and can't finish logging in.
+5. Copy the **Project URL**, **anon key**, and **service_role key** from Settings → API.
 
 ### 3. Fill in `.env` (local) and Vercel env vars
-Put the four Supabase/Anthropic values + a NEW `VITE_TRIP_PASSCODE` into `.env`
-(local) and into the Vercel project's Environment Variables. You can reuse your
-existing **Anthropic API key** or make a new one.
+Put the four Supabase/Anthropic values into `.env` (local) and into the Vercel
+project's Environment Variables. You can reuse your existing **Anthropic API
+key** or make a new one. (Login no longer uses a passcode, so `VITE_TRIP_PASSCODE`
+is not needed — login is open email OTP.)
 
 ### 4. Create the GitHub repo + Vercel project
 - New GitHub repo (e.g. `corsica-trip`), then from this folder:
@@ -42,7 +47,7 @@ existing **Anthropic API key** or make a new one.
 
 ### 5. Verify (same as the Aeolian app)
 - `npm run build` + `npm test` locally.
-- On the deploy: log in with the passcode → check **Chat** (Léa replies) and **Photos** (upload identifies). Both exercise the `api/` functions + Anthropic + Supabase.
+- On the deploy: log in (enter email → type the code from the email) → check **Chat** (Léa replies) and **Photos** (upload identifies). Both exercise the `api/` functions + Anthropic + Supabase.
 - Two browsers → confirm realtime + offline (go offline, add a note/photo, reconnect → it syncs).
 
 ### 6. (Optional polish)
