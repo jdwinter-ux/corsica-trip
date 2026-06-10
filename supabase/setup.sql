@@ -66,9 +66,9 @@ CREATE TABLE IF NOT EXISTS trip_travelers (
 
 -- ----------------------------------------------------------------------------
 -- Row Level Security
--- The app is gated by a shared passcode, so any authenticated member may
--- read/write trip data. (Server-side functions use the service role and bypass
--- RLS regardless.) Re-runnable: policies are dropped first.
+-- Any authenticated user may read/write trip data — login is open email OTP
+-- (anyone who can complete the emailed code is in). (Server-side functions use
+-- the service role and bypass RLS regardless.) Re-runnable: policies are dropped first.
 -- ----------------------------------------------------------------------------
 DO $$
 DECLARE t TEXT;

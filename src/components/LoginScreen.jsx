@@ -2,96 +2,134 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { THEME } from '../config/theme';
 
-const TRIP_PASSCODE = import.meta.env.VITE_TRIP_PASSCODE;
+// Shared input styling
+const inputStyle = {
+  width: '100%',
+  boxSizing: 'border-box',
+  background: THEME.rgba(THEME.base.white, 0.05),
+  border: `1px solid ${THEME.rgba(THEME.base.gold, 0.2)}`,
+  borderRadius: '8px',
+  padding: '0.8rem 1rem',
+  color: THEME.parchment,
+  fontFamily: 'inherit',
+  fontSize: '1rem',
+  outline: 'none',
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '0.75rem',
+  color: THEME.blue,
+  marginBottom: '0.4rem',
+  letterSpacing: '0.08em',
+};
 
 export default function LoginScreen() {
+  const [step, setStep] = useState('request'); // 'request' | 'verify'
   const [email, setEmail] = useState('');
-  const [passcode, setPasscode] = useState('');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
-  const handleLogin = async (e) => {
+  // Step 1: validate the email, then email a 6-digit code.
+  const handleSendCode = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
 
-    // Fail closed: if no passcode is configured, never let a (blank) one through
-    if (!TRIP_PASSCODE) {
-      setError('Login is not configured yet. Please contact the trip organizer.');
-      return;
-    }
-
-    if (passcode !== TRIP_PASSCODE) {
-      setError('Invalid trip passcode');
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    // Normalize: mobile keyboards capitalize and add trailing spaces.
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       setError('Please enter a valid email');
       return;
     }
+    setEmail(normalizedEmail); // keep verify/resend consistent with what we sent
 
     setLoading(true);
 
     const { error: authError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
+      email: normalizedEmail,
+      options: { shouldCreateUser: true },
     });
 
     setLoading(false);
 
     if (authError) {
-      // Provide friendlier messages for common errors
       if (authError.message.toLowerCase().includes('rate limit')) {
         setError('Too many login attempts. Please wait a minute before trying again.');
       } else {
         setError(authError.message);
       }
     } else {
-      setSent(true);
+      setStep('verify');
     }
   };
 
-  if (sent) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: `linear-gradient(160deg, ${THEME.bgDeep} 0%, ${THEME.bgMid} 40%, ${THEME.bgDeep} 100%)`,
-        fontFamily: "'Georgia', 'Times New Roman', serif",
-        color: THEME.parchment,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-      }}>
-        <div style={{
-          background: THEME.rgba(THEME.base.white, 0.03),
-          border: `1px solid ${THEME.rgba(THEME.base.gold, 0.15)}`,
-          borderRadius: '16px',
-          padding: '2.5rem 2rem',
-          maxWidth: '400px',
-          width: '100%',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✉️</div>
-          <h2 style={{ color: THEME.cream, margin: '0 0 0.5rem', fontSize: '1.4rem', fontWeight: 400 }}>
-            Check Your Email
-          </h2>
-          <p style={{ color: THEME.blue, fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
-            We sent a login link to<br />
-            <span style={{ color: THEME.gold }}>{email}</span>
-          </p>
-          <p style={{ color: THEME.blueMuted, fontSize: '0.8rem', marginTop: '1.5rem' }}>
-            Click the link in your email to join the voyage journal.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  // Step 2: verify the 6-digit code. On success, App's auth listener takes over.
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+    setInfo('');
 
-  return (
+    const token = code.replace(/\s/g, '');
+    if (!/^\d{6}$/.test(token)) {
+      setError('Enter the 6-digit code from your email');
+      return;
+    }
+
+    setLoading(true);
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+
+    setLoading(false);
+
+    if (verifyError) {
+      const msg = verifyError.message.toLowerCase();
+      if (msg.includes('expired')) {
+        setError('That code has expired. Tap "Resend code" to get a new one.');
+      } else if (msg.includes('invalid') || msg.includes('token')) {
+        setError('That code is not correct. Double-check and try again.');
+      } else {
+        setError(verifyError.message);
+      }
+    }
+    // No success branch needed — onAuthStateChange in App.jsx swaps the screen.
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setInfo('');
+    setCode('');
+    setLoading(true);
+    const { error: authError } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    setLoading(false);
+    if (authError) {
+      setError(
+        authError.message.toLowerCase().includes('rate limit')
+          ? 'Please wait a minute before requesting another code.'
+          : authError.message
+      );
+    } else {
+      setInfo('New code sent.');
+    }
+  };
+
+  const handleStartOver = () => {
+    setStep('request');
+    setCode('');
+    setError('');
+    setInfo('');
+  };
+
+  const shell = (children) => (
     <div style={{
       minHeight: '100vh',
       background: `linear-gradient(160deg, ${THEME.bgDeep} 0%, ${THEME.bgMid} 40%, ${THEME.bgDeep} 100%)`,
@@ -135,95 +173,146 @@ export default function LoginScreen() {
             June 19–23, 2026
           </div>
         </div>
+        {children}
+      </div>
+    </div>
+  );
 
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: THEME.blue, marginBottom: '0.4rem', letterSpacing: '0.08em' }}>
-              TRIP PASSCODE
-            </label>
+  const errorBox = error && (
+    <div style={{
+      background: THEME.rgba(THEME.base.red, 0.12),
+      border: `1px solid ${THEME.rgba(THEME.base.red, 0.3)}`,
+      borderRadius: '8px',
+      padding: '0.7rem 1rem',
+      color: THEME.error,
+      fontSize: '0.85rem',
+      marginBottom: '1rem',
+    }}>
+      {error}
+    </div>
+  );
+
+  const button = (label) => (
+    <button
+      type="submit"
+      disabled={loading}
+      style={{
+        width: '100%',
+        padding: '0.9rem',
+        background: loading ? THEME.rgba(THEME.base.goldDeep, 0.3) : `linear-gradient(135deg, ${THEME.gold}, ${THEME.goldLight})`,
+        border: 'none',
+        borderRadius: '8px',
+        color: THEME.bgDeep,
+        fontWeight: 700,
+        fontFamily: 'inherit',
+        fontSize: '0.95rem',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        letterSpacing: '0.05em',
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  if (step === 'verify') {
+    return shell(
+      <>
+        <form onSubmit={handleVerify}>
+          <div style={{ marginBottom: '1.2rem', textAlign: 'center' }}>
+            <p style={{ color: THEME.blue, fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
+              We emailed a 6-digit code to<br />
+              <span style={{ color: THEME.gold }}>{email}</span>
+            </p>
+          </div>
+
+          <div style={{ marginBottom: '1.2rem' }}>
+            <label style={labelStyle}>ENTER CODE</label>
             <input
-              type="password"
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              placeholder="Enter shared passcode"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+              placeholder="123456"
               style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: THEME.rgba(THEME.base.white, 0.05),
-                border: `1px solid ${THEME.rgba(THEME.base.gold, 0.2)}`,
-                borderRadius: '8px',
-                padding: '0.8rem 1rem',
-                color: THEME.parchment,
-                fontFamily: 'inherit',
-                fontSize: '1rem',
-                outline: 'none',
+                ...inputStyle,
+                textAlign: 'center',
+                fontSize: '1.6rem',
+                letterSpacing: '0.4em',
               }}
             />
           </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: THEME.blue, marginBottom: '0.4rem', letterSpacing: '0.08em' }}>
-              YOUR EMAIL
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: THEME.rgba(THEME.base.white, 0.05),
-                border: `1px solid ${THEME.rgba(THEME.base.gold, 0.2)}`,
-                borderRadius: '8px',
-                padding: '0.8rem 1rem',
-                color: THEME.parchment,
-                fontFamily: 'inherit',
-                fontSize: '1rem',
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          {error && (
+          {errorBox}
+          {info && (
             <div style={{
-              background: THEME.rgba(THEME.base.red, 0.12),
-              border: `1px solid ${THEME.rgba(THEME.base.red, 0.3)}`,
-              borderRadius: '8px',
-              padding: '0.7rem 1rem',
-              color: THEME.error,
-              fontSize: '0.85rem',
-              marginBottom: '1rem',
+              color: THEME.gold, fontSize: '0.8rem', textAlign: 'center', marginBottom: '1rem',
             }}>
-              {error}
+              {info}
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.9rem',
-              background: loading ? THEME.rgba(THEME.base.goldDeep, 0.3) : `linear-gradient(135deg, ${THEME.gold}, ${THEME.goldLight})`,
-              border: 'none',
-              borderRadius: '8px',
-              color: THEME.bgDeep,
-              fontWeight: 700,
-              fontFamily: 'inherit',
-              fontSize: '0.95rem',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              letterSpacing: '0.05em',
-            }}
-          >
-            {loading ? 'Sending...' : 'Send Login Link'}
-          </button>
+          {button(loading ? 'Verifying...' : 'Enter Journal')}
         </form>
 
-        <p style={{ textAlign: 'center', color: THEME.blueMuted, fontSize: '0.75rem', marginTop: '1.5rem', lineHeight: 1.5 }}>
-          Enter the trip passcode shared by your host<br />to receive a magic login link.
-        </p>
-      </div>
-    </div>
+        <div style={{ textAlign: 'center', marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={loading}
+            style={{
+              background: 'none', border: 'none', color: THEME.blue,
+              fontFamily: 'inherit', fontSize: '0.8rem', cursor: 'pointer',
+              textDecoration: 'underline',
+            }}
+          >
+            Resend code
+          </button>
+          <button
+            type="button"
+            onClick={handleStartOver}
+            style={{
+              background: 'none', border: 'none', color: THEME.blueMuted,
+              fontFamily: 'inherit', fontSize: '0.75rem', cursor: 'pointer',
+            }}
+          >
+            Use a different email
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  return shell(
+    <>
+      <form onSubmit={handleSendCode}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>YOUR EMAIL</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoFocus
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            style={inputStyle}
+          />
+        </div>
+
+        {errorBox}
+
+        {button(loading ? 'Sending...' : 'Send Login Code')}
+      </form>
+
+      <p style={{ textAlign: 'center', color: THEME.blueMuted, fontSize: '0.75rem', marginTop: '1.5rem', lineHeight: 1.5 }}>
+        Enter your email and we'll send you<br />a 6-digit code to log in.
+      </p>
+    </>
   );
 }
