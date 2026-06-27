@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import { TRIP } from '../src/data/trip.js';
 import { GUIDE } from '../src/data/guide.js';
 import { PHOTO_ONLY_PLACEHOLDER } from '../src/lib/chatConstants.js';
+import { ANTHROPIC_MODEL } from './_aiModel.js';
 
 // Helper to process attachments into Claude content blocks
 async function processAttachments(attachments, supabase) {
@@ -344,7 +345,7 @@ export default async function handler(req, res) {
 
     // Call Claude API with tools
     let response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: ANTHROPIC_MODEL,
       max_tokens: 1024,
       system: systemPrompt,
       messages: messages,
@@ -423,7 +424,7 @@ export default async function handler(req, res) {
 
       // Continue the conversation
       response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: ANTHROPIC_MODEL,
         max_tokens: 1024,
         system: systemPrompt,
         messages: messages,

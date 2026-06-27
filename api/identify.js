@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import { DAY_LOCATIONS } from '../src/data/locations.js';
+import { ANTHROPIC_MODEL } from './_aiModel.js';
 
 // Try to import exifr - it may not work in all serverless environments
 let exifr = null;
@@ -202,7 +203,7 @@ Respond with ONLY a JSON object (no markdown):
 
     // Call Anthropic API with enriched context
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: ANTHROPIC_MODEL,
       max_tokens: 1000,
       messages: [{ role: 'user', content }],
     });
