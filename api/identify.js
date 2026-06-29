@@ -184,17 +184,22 @@ Known locations for this day:
     content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } });
     content.push({
       type: 'text',
-      text: `You are a Corsica & Côte d'Azur travel expert helping identify photos from a Corsica & Côte d'Azur trip (Cap Corse, Bonifacio, Nice).
+      text: `You are a Corsica & Côte d'Azur travel expert helping identify photos from a trip (Cap Corse, Bonifacio, Nice).
 
 This photo (the one labeled "Photo to identify") was taken on ${day_context}.${gpsInfo}${locationContext}${travelerContext}${confirmedContext}
 
-Identify the location, landmarks, food, or people in the photo to identify. Be specific - use the known locations list to help identify places. ${referenceImages.length > 0 ? 'Match any faces against the labeled reference photos above; only name a person if you are reasonably confident, otherwise leave them out.' : ''}
+First identify what the photo ACTUALLY shows — the real subject, whether that's a landmark, building, food, plant, animal, object, or people. Then place it.
+
+Guidance:
+- The known-locations and day context above are HINTS, not ground truth. Use them to help place real landmarks, but do NOT force the photo into one of those places when the subject is something else (a plant, an object, a dish). Identify the true subject even if it isn't a named place.
+- Be specific when confident, and HONEST when not. If you can't determine the exact spot, give your best general placement and say so in the description rather than inventing a precise location — e.g. "a Cap Corse village (exact spot uncertain)" beats guessing a specific name. When uncertain, note the visual evidence or plausible alternatives in the description.
+${referenceImages.length > 0 ? '- Match any faces against the labeled reference photos above; only name a person if you are reasonably confident, otherwise leave them out.' : ''}
 
 Respond with ONLY a JSON object (no markdown):
 {
-  "title": "short descriptive name (include people's names if recognized)",
-  "location": "specific place / landmark identified",
-  "description": "2-3 sentence vivid travel description mentioning people by name if present",
+  "title": "short descriptive name of the actual subject (include people's names if recognized)",
+  "location": "best place/area; if the exact spot is uncertain, give the general area and flag the uncertainty",
+  "description": "2-3 sentence vivid travel description; mention people by name if present; express uncertainty or alternatives when you are not sure",
   "tags": ["tag1","tag2","tag3"],
   "category": one of "landmark","food","seascape","wildlife","people","architecture","activity","beach",
   "people": ["names of recognized travelers; empty array if none"]
