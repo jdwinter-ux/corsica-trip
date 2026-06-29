@@ -271,7 +271,10 @@ Respond with ONLY a JSON object (no markdown):
     // whichever model ANTHROPIC_VISION_MODEL points at.
     const message = await anthropic.messages.create({
       model: ANTHROPIC_VISION_MODEL,
-      max_tokens: 4096,
+      // Generous cap: high-effort thinking tokens count toward max_tokens, so a
+      // tight limit can truncate the JSON answer (which then fails to parse and
+      // surfaces as "identification failed"). The JSON itself is small.
+      max_tokens: 8000,
       thinking: { type: 'adaptive' },
       output_config: { effort: 'high' },
       messages: [{ role: 'user', content }],
