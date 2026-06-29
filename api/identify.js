@@ -204,11 +204,14 @@ Respond with ONLY a JSON object (no markdown):
     // Call Anthropic API with enriched context.
     // Use the strongest vision model + extended thinking so it reasons about the
     // image before committing to the JSON, rather than answering in one shot.
-    // max_tokens must exceed the thinking budget; the JSON answer itself is small.
+    // Opus 4.8 uses the adaptive-thinking API (thinking.type 'adaptive' +
+    // output_config.effort); Sonnet 4.6 accepts the same form, so this works
+    // whichever model ANTHROPIC_VISION_MODEL points at.
     const message = await anthropic.messages.create({
       model: ANTHROPIC_VISION_MODEL,
-      max_tokens: 3000,
-      thinking: { type: 'enabled', budget_tokens: 2000 },
+      max_tokens: 4096,
+      thinking: { type: 'adaptive' },
+      output_config: { effort: 'high' },
       messages: [{ role: 'user', content }],
     });
 
