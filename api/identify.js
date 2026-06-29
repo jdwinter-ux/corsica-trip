@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
 import { DAY_LOCATIONS } from '../src/data/locations.js';
-import { ANTHROPIC_MODEL } from './_aiModel.js';
+import { ANTHROPIC_VISION_MODEL } from './_aiModel.js';
 
 // Try to import exifr - it may not work in all serverless environments
 let exifr = null;
@@ -201,10 +201,14 @@ Respond with ONLY a JSON object (no markdown):
 }`,
     });
 
-    // Call Anthropic API with enriched context
+    // Call Anthropic API with enriched context.
+    // Use the strongest vision model + extended thinking so it reasons about the
+    // image before committing to the JSON, rather than answering in one shot.
+    // max_tokens must exceed the thinking budget; the JSON answer itself is small.
     const message = await anthropic.messages.create({
-      model: ANTHROPIC_MODEL,
-      max_tokens: 1000,
+      model: ANTHROPIC_VISION_MODEL,
+      max_tokens: 3000,
+      thinking: { type: 'enabled', budget_tokens: 2000 },
       messages: [{ role: 'user', content }],
     });
 
