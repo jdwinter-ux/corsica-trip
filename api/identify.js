@@ -148,8 +148,10 @@ export default async function handler(req, res) {
       .order('role', { ascending: true });  // crew first, then guests
 
     // Compress and resize image to fit under 5MB limit
-    // Higher resolution and quality for better recognition
-    const compressedBuffer = await sharp(imageBuffer)
+    // Higher resolution and quality for better recognition.
+    // failOn:'none' tolerates slightly-malformed JPEGs (e.g. stitched phone
+    // panoramas) that would otherwise crash decoding and fail identification.
+    const compressedBuffer = await sharp(imageBuffer, { failOn: 'none' })
       .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: 90 })
       .toBuffer();
@@ -196,7 +198,7 @@ Known locations for this day:
         const { data: refData, error: refErr } = await supabase.storage.from('photos').download(path);
         if (refErr || !refData) continue;
         const refBuffer = Buffer.from(await refData.arrayBuffer());
-        const refCompressed = await sharp(refBuffer)
+        const refCompressed = await sharp(refBuffer, { failOn: 'none' })
           .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 80 })
           .toBuffer();

@@ -31,8 +31,10 @@ async function processAttachments(attachments, supabase) {
         const imageBuffer = Buffer.from(arrayBuffer);
 
         // Compress and resize to fit under 5MB limit
-        // Use higher resolution and quality for better recognition
-        const compressedBuffer = await sharp(imageBuffer)
+        // Use higher resolution and quality for better recognition.
+        // failOn:'none' tolerates slightly-malformed JPEGs (e.g. panoramas)
+        // that would otherwise crash decoding.
+        const compressedBuffer = await sharp(imageBuffer, { failOn: 'none' })
           .resize(2048, 2048, { fit: 'inside', withoutEnlargement: true })
           .jpeg({ quality: 90 })
           .toBuffer();
