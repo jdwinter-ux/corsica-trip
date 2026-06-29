@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export async function identifyPhoto(photoId, storagePath, dayContext) {
+export async function identifyPhoto(photoId, storagePath, dayContext, opts = {}) {
   const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
@@ -17,6 +17,9 @@ export async function identifyPhoto(photoId, storagePath, dayContext) {
       photo_id: photoId,
       storage_path: storagePath,
       day_context: dayContext,
+      // Optional clarification from the "Refine" flow.
+      user_hint: opts.userHint || undefined,
+      user_coords: opts.userCoords || undefined,
     }),
   });
 

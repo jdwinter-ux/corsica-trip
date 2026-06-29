@@ -23,6 +23,11 @@ export default function PhotosTab({ day, userEmail }) {
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  // "Refine" flow: give the AI a location hint (or your current location) and re-identify.
+  const [refiningId, setRefiningId] = useState(null);
+  const [refineHint, setRefineHint] = useState('');
+  const [refineBusy, setRefineBusy] = useState(false);
+  const [refineMsg, setRefineMsg] = useState('');
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const dayNumber = day?.n;
@@ -266,18 +271,22 @@ export default function PhotosTab({ day, userEmail }) {
     setUploading(false);
   }, [day, userEmail]);
 
-  async function retryIdentify(photo) {
+  // Re-run identification. `opts` may carry a user clarification ({ userHint }
+  // or { userCoords }) from the Refine flow; with no opts it's a plain retry.
+  async function retryIdentify(photo, opts = {}) {
     const dayContext = `Day ${day.n} (${day.weekday} ${day.date}) — ${day.title} · ${day.route}`;
 
+    setRefineBusy(true);
     setPhotos(prev => prev.map(p =>
       p.id === photo.id ? { ...p, _loading: true, _failed: false } : p
     ));
 
     try {
-      const result = await identifyPhoto(photo.id, photo.storage_path, dayContext);
+      const result = await identifyPhoto(photo.id, photo.storage_path, dayContext, opts);
       setPhotos(prev => prev.map(p =>
         p.id === photo.id ? { ...p, ...result, _loading: false } : p
       ));
+      closeRefine();
     } catch (err) {
       console.error('Retry identify error:', err);
       setPhotos(prev => prev.map(p =>
@@ -285,7 +294,48 @@ export default function PhotosTab({ day, userEmail }) {
           ? { ...p, _loading: false, _failed: true, description: 'Identification failed — tap to retry.' }
           : p
       ));
+    } finally {
+      setRefineBusy(false);
     }
+  }
+
+  function startRefine(photo) {
+    setEditingId(null);
+    setRefiningId(photo.id);
+    setRefineHint('');
+    setRefineMsg('');
+  }
+
+  function closeRefine() {
+    setRefiningId(null);
+    setRefineHint('');
+    setRefineMsg('');
+  }
+
+  function submitRefine(photo) {
+    const hint = refineHint.trim();
+    if (!hint) return;
+    retryIdentify(photo, { userHint: hint });
+  }
+
+  // Use the browser's CURRENT location as the photo's location — only valid if
+  // the user is at the spot right now (they're warned of that in the UI).
+  function useMyLocation(photo) {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setRefineMsg('Location is not available in this browser.');
+      return;
+    }
+    setRefineMsg('Getting your location…');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setRefineMsg('');
+        retryIdentify(photo, { userCoords: { lat: pos.coords.latitude, lon: pos.coords.longitude } });
+      },
+      (err) => {
+        setRefineMsg(err.code === 1 ? 'Location permission denied.' : "Couldn't get your location.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
   }
 
   async function deletePhoto(photo) {
@@ -318,6 +368,7 @@ export default function PhotosTab({ day, userEmail }) {
   }
 
   function startEdit(photo) {
+    setRefiningId(null);
     setEditingId(photo.id);
     setDraft({
       title: photo.title || '',
@@ -453,6 +504,19 @@ export default function PhotosTab({ day, userEmail }) {
                     <div style={{ display: 'flex', gap: '0.2rem' }}>
                       {!photo._pending && (
                         <button
+                          onClick={(e) => { e.stopPropagation(); refiningId === photo.id ? closeRefine() : startRefine(photo); }}
+                          title="Refine location / re-identify"
+                          style={{
+                            background: 'none', border: 'none',
+                            color: refiningId === photo.id ? THEME.gold : THEME.blueMuted,
+                            cursor: 'pointer', fontSize: '0.75rem', padding: '0.1rem 0.3rem',
+                          }}
+                        >
+                          🧭
+                        </button>
+                      )}
+                      {!photo._pending && (
+                        <button
                           onClick={(e) => { e.stopPropagation(); startEdit(photo); }}
                           title="Edit / correct"
                           style={{
@@ -540,6 +604,75 @@ export default function PhotosTab({ day, userEmail }) {
                             color: THEME.goldMuted, letterSpacing: '0.05em',
                           }}>{tag}</span>
                         ))}
+                      </div>
+                    )}
+
+                    {refiningId === photo.id && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          marginTop: '0.8rem', paddingTop: '0.7rem',
+                          borderTop: `1px solid ${THEME.rgba(THEME.base.gold, 0.15)}`,
+                        }}
+                      >
+                        <div style={{ fontSize: '0.7rem', color: THEME.blue, marginBottom: '0.4rem' }}>
+                          🧭 Tell Léa where this was, then re-identify:
+                        </div>
+                        <input
+                          style={editInputStyle}
+                          value={refineHint}
+                          onChange={(e) => setRefineHint(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') submitRefine(photo); }}
+                          placeholder="e.g. Bonifacio marina, or a tower near Centuri"
+                          disabled={refineBusy}
+                        />
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <button
+                            onClick={() => submitRefine(photo)}
+                            disabled={refineBusy || !refineHint.trim()}
+                            style={{
+                              padding: '0.4rem 0.9rem', border: 'none', borderRadius: '6px',
+                              background: (refineBusy || !refineHint.trim())
+                                ? THEME.rgba(THEME.base.gold, 0.3)
+                                : `linear-gradient(135deg, ${THEME.gold}, ${THEME.goldLight})`,
+                              color: THEME.bgDeep, fontWeight: 700, fontFamily: 'inherit', fontSize: '0.75rem',
+                              cursor: (refineBusy || !refineHint.trim()) ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {refineBusy ? 'Working…' : 'Re-identify'}
+                          </button>
+                          <button
+                            onClick={() => useMyLocation(photo)}
+                            disabled={refineBusy}
+                            title="Only if you're at this spot right now"
+                            style={{
+                              padding: '0.4rem 0.9rem', borderRadius: '6px',
+                              background: 'none', border: `1px solid ${THEME.rgba(THEME.base.gold, 0.2)}`,
+                              color: THEME.blue, fontFamily: 'inherit', fontSize: '0.75rem',
+                              cursor: refineBusy ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            📍 Use my location
+                          </button>
+                          <button
+                            onClick={closeRefine}
+                            disabled={refineBusy}
+                            style={{
+                              padding: '0.4rem 0.9rem', borderRadius: '6px',
+                              background: 'none', border: `1px solid ${THEME.rgba(THEME.base.gold, 0.2)}`,
+                              color: THEME.blueMuted, fontFamily: 'inherit', fontSize: '0.75rem',
+                              cursor: refineBusy ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '0.62rem', color: THEME.blueMuted, marginTop: '0.4rem', lineHeight: 1.4 }}>
+                          “Use my location” only helps if you're at this spot right now.
+                        </div>
+                        {refineMsg && (
+                          <div style={{ fontSize: '0.68rem', color: THEME.gold, marginTop: '0.3rem' }}>{refineMsg}</div>
+                        )}
                       </div>
                     )}
                   </>

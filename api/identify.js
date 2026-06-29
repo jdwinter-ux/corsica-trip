@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Invalid token' });
   }
 
-  const { photo_id, storage_path, day_context } = req.body;
+  const { photo_id, storage_path, day_context, user_hint, user_coords } = req.body;
 
   if (!photo_id || !storage_path || !day_context) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -123,6 +123,22 @@ export default async function handler(req, res) {
       } catch (exifErr) {
         console.log('No EXIF data available:', exifErr.message);
       }
+    }
+
+    // User-provided clarification from the "Refine" flow — the most authoritative
+    // signal, since the user was actually there. A free-text hint and/or the
+    // user's current device location (reverse-geocoded) when they tap "use my
+    // location" at the spot.
+    let userContext = '';
+    if (typeof user_hint === 'string' && user_hint.trim()) {
+      userContext += `\nThe user, who was present, says about this photo: "${user_hint.trim().slice(0, 300)}". Treat this as AUTHORITATIVE — correct the location/subject to match it.`;
+    }
+    if (user_coords && Number.isFinite(user_coords.lat) && Number.isFinite(user_coords.lon)
+        && Math.abs(user_coords.lat) <= 90 && Math.abs(user_coords.lon) <= 180) {
+      const place = await reverseGeocode(user_coords.lat, user_coords.lon);
+      userContext += place
+        ? `\nThe user indicates (from their current location) the photo was taken at or near: ${place}. Treat this as AUTHORITATIVE for placement.`
+        : `\nThe user indicates the photo was taken near ${formatCoords(user_coords.lat, user_coords.lon)}. Treat this as authoritative for placement.`;
     }
 
     // Fetch travelers from database (including uploaded reference headshots)
@@ -223,11 +239,12 @@ Known locations for this day:
       type: 'text',
       text: `You are a Corsica & Côte d'Azur travel expert helping identify photos from a trip (Cap Corse, Bonifacio, Nice).
 
-This photo (the one labeled "Photo to identify") was taken on ${day_context}.${gpsInfo}${locationContext}${travelerContext}${confirmedContext}
+This photo (the one labeled "Photo to identify") was taken on ${day_context}.${userContext}${gpsInfo}${locationContext}${travelerContext}${confirmedContext}
 
 First identify what the photo ACTUALLY shows — the real subject, whether that's a landmark, building, food, plant, animal, object, or people. Then place it.
 
 Guidance:
+- If the user has provided a clarification or their own location above, treat it as the MOST authoritative signal — it overrides the GPS, the day's hints, and your own initial guess.
 - If a GPS-derived location is given above, trust it as the camera's actual position and prefer it over the day's known-locations for placement (the subject may still be something seen from there).
 - The known-locations and day context above are HINTS, not ground truth. Use them to help place real landmarks, but do NOT force the photo into one of those places when the subject is something else (a plant, an object, a dish). Identify the true subject even if it isn't a named place.
 - Be specific when confident, and HONEST when not. If you can't determine the exact spot, give your best general placement and say so in the description rather than inventing a precise location — e.g. "a Cap Corse village (exact spot uncertain)" beats guessing a specific name. When uncertain, note the visual evidence or plausible alternatives in the description.
