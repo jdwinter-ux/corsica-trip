@@ -12,6 +12,36 @@ try {
   console.log('exifr not available, GPS extraction disabled');
 }
 
+// Format raw EXIF coordinates with the correct hemisphere (handles S/W, not just N/E).
+function formatCoords(lat, lon) {
+  const latStr = `${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}`;
+  const lonStr = `${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}`;
+  return `${latStr}, ${lonStr}`;
+}
+
+// Reverse-geocode coordinates to a human place name via OpenStreetMap Nominatim
+// (free, no API key). Best-effort: a failure/timeout returns null and the caller
+// falls back to raw coordinates — geocoding must never break identification.
+async function reverseGeocode(lat, lon) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=jsonv2&zoom=14&addressdetails=0`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      // Nominatim's usage policy requires an identifying User-Agent.
+      headers: { 'User-Agent': 'voyage-journal/1.0 (trip photo identifier)' },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.display_name || null;
+  } catch (err) {
+    console.log('Reverse geocode unavailable:', err?.message);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   // Only allow POST
   if (req.method !== 'POST') {
@@ -71,7 +101,9 @@ export default async function handler(req, res) {
     const arrayBuffer = await photoData.arrayBuffer();
     const imageBuffer = Buffer.from(arrayBuffer);
 
-    // Extract EXIF data including GPS coordinates (if exifr is available)
+    // Extract EXIF data including GPS coordinates (if exifr is available).
+    // When GPS is present we reverse-geocode it to a place name and treat that
+    // as strong evidence of where the photo was taken (the camera's position).
     let gpsInfo = '';
     if (exifr) {
       try {
@@ -80,8 +112,13 @@ export default async function handler(req, res) {
           pick: ['latitude', 'longitude', 'DateTimeOriginal', 'Make', 'Model'],
         });
         if (exifData?.latitude && exifData?.longitude) {
-          gpsInfo = `\nGPS coordinates: ${exifData.latitude.toFixed(4)}°N, ${exifData.longitude.toFixed(4)}°E`;
-          console.log(`Photo GPS: ${exifData.latitude}, ${exifData.longitude}`);
+          const lat = exifData.latitude, lon = exifData.longitude;
+          gpsInfo = `\nGPS coordinates: ${formatCoords(lat, lon)}`;
+          const place = await reverseGeocode(lat, lon);
+          if (place) {
+            gpsInfo += `\nGPS-derived location (where the photo was taken — strong, reliable evidence of the camera's position; the main subject may be something viewed from here): ${place}`;
+          }
+          console.log(`Photo GPS: ${lat}, ${lon}${place ? ' -> ' + place : ''}`);
         }
       } catch (exifErr) {
         console.log('No EXIF data available:', exifErr.message);
@@ -191,6 +228,7 @@ This photo (the one labeled "Photo to identify") was taken on ${day_context}.${g
 First identify what the photo ACTUALLY shows — the real subject, whether that's a landmark, building, food, plant, animal, object, or people. Then place it.
 
 Guidance:
+- If a GPS-derived location is given above, trust it as the camera's actual position and prefer it over the day's known-locations for placement (the subject may still be something seen from there).
 - The known-locations and day context above are HINTS, not ground truth. Use them to help place real landmarks, but do NOT force the photo into one of those places when the subject is something else (a plant, an object, a dish). Identify the true subject even if it isn't a named place.
 - Be specific when confident, and HONEST when not. If you can't determine the exact spot, give your best general placement and say so in the description rather than inventing a precise location — e.g. "a Cap Corse village (exact spot uncertain)" beats guessing a specific name. When uncertain, note the visual evidence or plausible alternatives in the description.
 ${referenceImages.length > 0 ? '- Match any faces against the labeled reference photos above; only name a person if you are reasonably confident, otherwise leave them out.' : ''}
