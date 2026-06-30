@@ -440,6 +440,10 @@ export default function PhotosTab({ day, userEmail }) {
     color: THEME.parchment, fontFamily: 'inherit', fontSize: '0.8rem', outline: 'none',
   };
 
+  // Show the live photo in the lightbox (so a caption stays current if the photo
+  // identifies/updates while open); fall back to the click-time snapshot.
+  const lbPhoto = lightbox ? (photos.find(p => p.id === lightbox.id) || lightbox) : null;
+
   return (
     <div>
       <div style={{
@@ -705,7 +709,7 @@ export default function PhotosTab({ day, userEmail }) {
         </div>
       )}
 
-      {lightbox && (
+      {lbPhoto && (
         <div
           onClick={() => setLightbox(null)}
           style={{
@@ -731,19 +735,19 @@ export default function PhotosTab({ day, userEmail }) {
             ✕
           </button>
           <img
-            src={lightbox._objectUrl || getPhotoUrl(lightbox.storage_path)}
-            alt={lightbox.title}
+            src={lbPhoto._objectUrl || getPhotoUrl(lbPhoto.storage_path)}
+            alt={lbPhoto.title}
             style={{
               maxWidth: '100%', maxHeight: '82vh',
               objectFit: 'contain', borderRadius: '8px',
               boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
             }}
           />
-          {(lightbox.title || lightbox.location) && (
+          {(lbPhoto.title || lbPhoto.location) && (
             <div style={{ marginTop: '0.8rem', textAlign: 'center', maxWidth: '90%' }}>
-              <div style={{ color: THEME.cream, fontSize: '0.95rem', fontWeight: 600 }}>{lightbox.title}</div>
-              {lightbox.location && (
-                <div style={{ color: THEME.gold, fontSize: '0.8rem', marginTop: '0.2rem' }}>📍 {lightbox.location}</div>
+              <div style={{ color: THEME.cream, fontSize: '0.95rem', fontWeight: 600 }}>{lbPhoto.title}</div>
+              {lbPhoto.location && (
+                <div style={{ color: THEME.gold, fontSize: '0.8rem', marginTop: '0.2rem' }}>📍 {lbPhoto.location}</div>
               )}
             </div>
           )}
