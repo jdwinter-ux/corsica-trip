@@ -28,6 +28,8 @@ export default function PhotosTab({ day, userEmail }) {
   const [refineHint, setRefineHint] = useState('');
   const [refineBusy, setRefineBusy] = useState(false);
   const [refineMsg, setRefineMsg] = useState('');
+  // Lightbox: the photo shown full-screen/uncropped when a thumbnail is tapped.
+  const [lightbox, setLightbox] = useState(null);
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const dayNumber = day?.n;
@@ -36,6 +38,19 @@ export default function PhotosTab({ day, userEmail }) {
   // (used to revoke object URLs as a side effect, never inside a setState updater).
   const photosRef = useRef([]);
   useEffect(() => { photosRef.current = photos; }, [photos]);
+
+  // While the lightbox is open: close on Escape and lock background scroll.
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e) => { if (e.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightbox]);
 
   useEffect(() => {
     if (!dayNumber) return;
@@ -486,8 +501,10 @@ export default function PhotosTab({ day, userEmail }) {
               <img
                 src={photo._objectUrl || getPhotoUrl(photo.storage_path)}
                 alt={photo.title}
+                onClick={(e) => { e.stopPropagation(); setLightbox(photo); }}
                 style={{
                   width: '100%', height: '180px', objectFit: 'cover', display: 'block',
+                  cursor: 'zoom-in',
                 }}
               />
               <div style={{ padding: '1rem' }} onClick={editingId === photo.id ? (e) => e.stopPropagation() : undefined}>
@@ -685,6 +702,51 @@ export default function PhotosTab({ day, userEmail }) {
         <div style={{ textAlign: 'center', padding: '3rem 1rem', color: THEME.blueDim, fontSize: '0.9rem' }}>
           No photos for {day.date} yet.<br />
           <span style={{ fontSize: '0.8rem' }}>Upload above to auto-identify.</span>
+        </div>
+      )}
+
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.92)',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            padding: '1rem', cursor: 'zoom-out',
+          }}
+        >
+          <button
+            onClick={() => setLightbox(null)}
+            aria-label="Close"
+            style={{
+              position: 'absolute', top: '1rem', right: '1rem',
+              background: 'rgba(0,0,0,0.4)',
+              border: `1px solid ${THEME.rgba(THEME.base.gold, 0.3)}`,
+              color: THEME.cream, borderRadius: '8px',
+              width: '2.2rem', height: '2.2rem', fontSize: '1.1rem',
+              cursor: 'pointer', lineHeight: 1,
+            }}
+          >
+            ✕
+          </button>
+          <img
+            src={lightbox._objectUrl || getPhotoUrl(lightbox.storage_path)}
+            alt={lightbox.title}
+            style={{
+              maxWidth: '100%', maxHeight: '82vh',
+              objectFit: 'contain', borderRadius: '8px',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+            }}
+          />
+          {(lightbox.title || lightbox.location) && (
+            <div style={{ marginTop: '0.8rem', textAlign: 'center', maxWidth: '90%' }}>
+              <div style={{ color: THEME.cream, fontSize: '0.95rem', fontWeight: 600 }}>{lightbox.title}</div>
+              {lightbox.location && (
+                <div style={{ color: THEME.gold, fontSize: '0.8rem', marginTop: '0.2rem' }}>📍 {lightbox.location}</div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
