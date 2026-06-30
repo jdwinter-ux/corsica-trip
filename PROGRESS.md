@@ -4,6 +4,63 @@ Running log of work on the Corsica & Nice Voyage Journal. Newest session first.
 
 ---
 
+## Session — 2026-06-29 (post-trip: photo recognition, GPS, refine, lightbox)
+
+Applied to **both** apps (kept in sync; only trip content / guide name differ).
+
+### Completed this session
+- **Photo identification upgraded to Opus + extended thinking.** `identify.js`
+  uses a separate `ANTHROPIC_VISION_MODEL` (claude-opus-4-8) with the adaptive
+  thinking API (`thinking:{type:'adaptive'}` + `output_config.effort:'high'`);
+  chat stays on Sonnet. `max_tokens` 8000 so high-effort thinking can't truncate
+  the JSON. `vercel.json` raises `api/identify.js` maxDuration to 60s. Gotcha:
+  Opus 4.8 rejects the old `thinking:{type:'enabled',budget_tokens}` form (400 →
+  "identification failed").
+- **Loosened the identify prompt** — identify the true subject first; treat the
+  day's known-locations as a hint, not ground truth; be honest about uncertainty
+  instead of inventing a precise place.
+- **GPS readiness** — reverse-geocode coords via OpenStreetMap Nominatim (free,
+  best-effort, 4s timeout) + correct hemisphere (S/W). NOTE: iOS strips GPS from
+  photos picked via the web file input, so 0/27 of this trip's photos had GPS —
+  this only helps future GPS-bearing uploads / forks.
+- **"Refine" flow** — per-photo 🧭 panel to give a location hint or use the
+  browser's current location, then re-identify and write back (most authoritative
+  signal in the prompt).
+- **Fixed a crash on malformed/panorama JPEGs** — `sharp({ failOn: 'none' })`; a
+  7936×2768 panorama always failed with "Invalid SOS parameters for sequential JPEG".
+- **Tap-to-expand lightbox** for photos (full uncropped view; Escape/backdrop/✕ to
+  close; reads live photo data so captions don't go stale).
+
+### Discussed, not built (future)
+- **"Discuss in Chat"** — open a photo in a Léa conversation with an `update_photo`
+  write-back tool (chat already supports image attachments + tool use).
+- **Spotted-log import** — `corsica_cotedazur_spotted_log.json` (repo root)
+  documents the trip; idea: seed photo entries on the correct day with an
+  "add photo" button.
+
+### Open / pending
+- **Performance: Supabase is in the EU, users are now in the US.** The browser
+  talks to Supabase directly (queries, realtime, storage), so it lags from the US.
+  Fix = migrate each project to a US region (us-east-1, co-located with Vercel's
+  iad1). Supabase can't relocate in place → new project + copy data/storage +
+  reconfigure settings (Site/redirect URLs, `{{ .Token }}` templates, SendGrid
+  SMTP, OTP=6) + swap env vars; users just re-login (attribution is by
+  author_email). Not yet done.
+- **Rotate the Aeolian service_role key** (exposed in a transcript). A US-region
+  migration would retire the old project and moot this.
+
+---
+
+## Session — 2026-06-26 (emergency: AI features fixed after model retirement)
+
+- Chat + photo identify both stopped working mid-trip. Cause: both pinned
+  `claude-sonnet-4-20250514`, which Anthropic **retired 2026-06-15**; requests
+  404'd and the catch masked it as a generic failure.
+- Fixed → `claude-sonnet-4-6`, then **centralized the model in `api/_aiModel.js`**
+  (env-overridable via `ANTHROPIC_MODEL`) so the next retirement is a one-line change.
+
+---
+
 ## Session — 2026-06-10 (login overhaul + go-live prep)
 
 Applied to **both** this app and the Aeolian app (kept in sync).
