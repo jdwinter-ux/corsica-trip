@@ -28,6 +28,9 @@ export default function PlanTab({ day, userEmail }) {
   // Whether this day's plan is backed by DB rows (vs. still showing the static
   // seed). Once true, the DB is authoritative for the day.
   const materializedRef = useRef(false);
+  // Holds the in-flight materialization promise so concurrent mutations wait for
+  // the seed rows to finish writing before they touch the DB (single-flight).
+  const materializingRef = useRef(null);
 
   // PlanTab is keyed by day in App, so it remounts on day change — no manual
   // state reset needed here; fetchPlan sets materializedRef in every branch.
@@ -57,7 +60,13 @@ export default function PlanTab({ day, userEmail }) {
       },
       onUpdate: (row) => {
         materializedRef.current = true;
-        setItems((prev) => prev.map((it) => (it.id === row.id ? row : it)));
+        setItems((prev) => prev.map((it) => {
+          if (it.id !== row.id) return it;
+          // Don't overwrite a row the user is mid-editing locally (unsynced) —
+          // our own save will echo back and reconcile it.
+          if (it._pending) return it;
+          return row;
+        }));
       },
       onDelete: (oldRow) =>
         setItems((prev) => prev.filter((it) => it.id !== oldRow.id)),
@@ -108,15 +117,27 @@ export default function PlanTab({ day, userEmail }) {
   // later edits operate on real rows. Deterministic seed ids + upsert make this
   // safe even if two travelers do it at the same moment.
   async function ensureMaterialized() {
-    if (materializedRef.current) return;
+    // Already done — but if a materialization is still in flight, wait for it so
+    // callers never race ahead of the seed writes.
+    if (materializedRef.current) {
+      if (materializingRef.current) await materializingRef.current;
+      return;
+    }
     materializedRef.current = true;
-    const seeds = itemsRef.current.map((it) => {
-      const r = { ...it };
-      delete r._seed;
-      return r;
-    });
-    setItems((prev) => prev.map((it) => ({ ...it, _seed: false, _pending: true })));
-    for (const row of seeds) await persistItem(row);
+    materializingRef.current = (async () => {
+      const seeds = itemsRef.current.map((it) => {
+        const r = { ...it };
+        delete r._seed;
+        return r;
+      });
+      setItems((prev) => prev.map((it) => ({ ...it, _seed: false, _pending: true })));
+      for (const row of seeds) await persistItem(row);
+    })();
+    try {
+      await materializingRef.current;
+    } finally {
+      materializingRef.current = null;
+    }
   }
 
   // Optimistic upsert with the app's offline fallback: queue when offline, and
@@ -154,6 +175,10 @@ export default function PlanTab({ day, userEmail }) {
   }
 
   async function commitField(id) {
+    // Only write if this row actually has an unsaved change — a plain
+    // focus/blur shouldn't materialize the day or fire a needless upsert.
+    const current = itemsRef.current.find((it) => it.id === id);
+    if (!current || !current._pending) return;
     await ensureMaterialized();
     const item = itemsRef.current.find((it) => it.id === id);
     if (item) await persistItem(item);
