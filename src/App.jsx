@@ -4,6 +4,7 @@ import { useRealtime } from './lib/useRealtime';
 import { useOnReconnect } from './lib/useOnReconnect';
 import { flushNotes } from './lib/notesQueue';
 import { flushPhotos } from './lib/photoQueue';
+import { flushPlanItems } from './lib/planQueue';
 import { TRIP } from './data/trip';
 import LoginScreen from './components/LoginScreen';
 import DaySelector from './components/DaySelector';
@@ -58,8 +59,9 @@ export default function App() {
   useEffect(() => {
     if (session) {
       fetchTotalPhotos();
-      flushNotes();  // sync notes saved offline in a previous session
-      flushPhotos(); // and photos
+      flushNotes();      // sync notes saved offline in a previous session
+      flushPhotos();     // and photos
+      flushPlanItems();  // and plan edits
     }
   }, [session]);
 
@@ -84,6 +86,7 @@ export default function App() {
       fetchTotalPhotos();
       flushNotes();
       flushPhotos();
+      flushPlanItems();
     }
   });
 
@@ -254,7 +257,7 @@ export default function App() {
         </div>
 
         {/* Tab content */}
-        {tab === 'plan' && <PlanTab day={day} />}
+        {tab === 'plan' && <PlanTab key={day?.n} day={day} userEmail={userEmail} />}
         {tab === 'map' && <MapTab day={day} />}
         {tab === 'places' && <PlacesTab day={day} userEmail={userEmail} />}
         {tab === 'photos' && <PhotosTab day={day} userEmail={userEmail} />}

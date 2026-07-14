@@ -31,6 +31,19 @@ CREATE TABLE IF NOT EXISTS trip_photos (
 CREATE INDEX IF NOT EXISTS idx_trip_photos_day ON trip_photos(day_number);
 CREATE INDEX IF NOT EXISTS idx_trip_photos_created_at ON trip_photos(created_at);
 
+-- Editable "Day at a Glance" plan items (seeded from static trip.js on first edit)
+CREATE TABLE IF NOT EXISTS trip_plan_items (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  day_number    INTEGER NOT NULL,
+  position      INTEGER NOT NULL DEFAULT 0,  -- ordering within the day (ascending)
+  time_label    TEXT,                        -- e.g. "~2 PM", "Morning", "Sunset"
+  what          TEXT NOT NULL,               -- the activity description
+  author_email  TEXT,
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_trip_plan_items_day ON trip_plan_items(day_number);
+
 -- Per-day shared journal notes
 CREATE TABLE IF NOT EXISTS trip_notes (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -73,7 +86,7 @@ CREATE TABLE IF NOT EXISTS trip_travelers (
 DO $$
 DECLARE t TEXT;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['trip_photos','trip_notes','trip_chat','trip_travelers'] LOOP
+  FOREACH t IN ARRAY ARRAY['trip_photos','trip_notes','trip_chat','trip_travelers','trip_plan_items'] LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY;', t);
     EXECUTE format('DROP POLICY IF EXISTS "auth read %1$s" ON %1$I;', t);
     EXECUTE format('DROP POLICY IF EXISTS "auth write %1$s" ON %1$I;', t);
@@ -108,7 +121,7 @@ CREATE POLICY "Auth delete trip storage" ON storage.objects FOR DELETE TO authen
 DO $$
 DECLARE t TEXT;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['trip_notes','trip_photos','trip_chat'] LOOP
+  FOREACH t IN ARRAY ARRAY['trip_notes','trip_photos','trip_chat','trip_plan_items'] LOOP
     IF NOT EXISTS (
       SELECT 1 FROM pg_publication_tables
       WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = t
